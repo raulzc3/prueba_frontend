@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type { User } from "./types";
 import "./App.css";
 import { fetchRandomUsers } from "./api";
@@ -7,6 +7,12 @@ function App() {
   const [users, setUsers] = useState<User[]>([]);
   const [originalUsers, setOriginalUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [countryFilter, setCountryFilter] = useState("");
+  const visibleUsers = useMemo(() => {
+    if (!countryFilter) return users;
+    const q = countryFilter.toLowerCase();
+    return users.filter((u) => u.location.country.toLowerCase().includes(q));
+  }, [users, countryFilter]);
 
   const fetchUsers = async () => {
     //Prevent multiple fetches at the same time
@@ -32,7 +38,7 @@ function App() {
 
   const restoreUsers = useCallback(() => {
     setUsers([...originalUsers]);
-  }, []);
+  }, [originalUsers]);
 
   useEffect(() => {
     fetchUsers();
@@ -41,17 +47,17 @@ function App() {
   return (
     <main>
       <section>
+        <input
+          value={countryFilter}
+          onChange={(e) => setCountryFilter(e.target.value)}
+          placeholder="Filtrar por país…"
+          style={{ padding: "6px 8px", minWidth: 220 }}
+        />
         <button
           onClick={restoreUsers}
           disabled={users.length === originalUsers.length}
-          style={{
-            padding: "8px 16px",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-          }}
         >
-          Restaurar Estado Inicial
+          Restaurar usuarios eliminados
         </button>
       </section>
 
@@ -66,7 +72,7 @@ function App() {
           </tr>
         </thead>
         <tbody>
-          {users.map((user) => (
+          {visibleUsers.map((user) => (
             <UserRow user={user} key={user.login.uuid} onDelete={deleteUser} />
           ))}
         </tbody>
